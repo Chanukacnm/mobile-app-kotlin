@@ -12,7 +12,7 @@ import com.example.servicebooking.models.Service
 class PopularServicesAdapter(
     private val onServiceClick: (Service) -> Unit
 ) : ListAdapter<Service, PopularServicesAdapter.ServiceViewHolder>(ServiceDiffCallback()) {
-    
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ServiceViewHolder {
         val binding = ItemServiceBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -21,39 +21,37 @@ class PopularServicesAdapter(
         )
         return ServiceViewHolder(binding)
     }
-    
+
     override fun onBindViewHolder(holder: ServiceViewHolder, position: Int) {
         holder.bind(getItem(position))
     }
-    
+
     inner class ServiceViewHolder(
         private val binding: ItemServiceBinding
     ) : RecyclerView.ViewHolder(binding.root) {
-        
+
         fun bind(service: Service) {
             binding.apply {
                 textServiceName.text = service.name
-                imageServiceIcon.setImageResource(service.iconRes)
+                iconService.setImageResource(service.iconRes)
                 
                 // Set background color
-                val backgroundColor = ContextCompat.getColor(
-                    root.context,
-                    service.backgroundColorRes
+                cardService.setCardBackgroundColor(
+                    ContextCompat.getColor(itemView.context, service.backgroundColorRes)
                 )
-                cardServiceIcon.setCardBackgroundColor(backgroundColor)
-                
+
                 root.setOnClickListener {
                     onServiceClick(service)
                 }
             }
         }
     }
-    
+
     private class ServiceDiffCallback : DiffUtil.ItemCallback<Service>() {
         override fun areItemsTheSame(oldItem: Service, newItem: Service): Boolean {
-            return oldItem.name == newItem.name
+            return oldItem.id == newItem.id
         }
-        
+
         override fun areContentsTheSame(oldItem: Service, newItem: Service): Boolean {
             return oldItem == newItem
         }

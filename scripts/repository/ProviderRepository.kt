@@ -11,57 +11,56 @@ class ProviderRepository(
     private val apiClient: ApiClient,
     private val databaseHelper: DatabaseHelper
 ) {
-    
-    suspend fun getNearbyProviders(location: String? = null): Resource<List<Provider>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val providers = if (location != null) {
-                    apiClient.getNearbyProviders(location)
-                } else {
-                    apiClient.getNearbyProviders()
-                }
-                databaseHelper.insertProviders(providers)
-                Resource.Success(providers)
-            } catch (e: Exception) {
-                try {
-                    val localProviders = databaseHelper.getNearbyProviders()
-                    Resource.Success(localProviders)
-                } catch (localException: Exception) {
-                    Resource.Error("Failed to load providers: ${e.message}", emptyList())
-                }
+
+    suspend fun getNearbyProviders(location: String? = null): Resource<List<Provider>> = withContext(Dispatchers.IO) {
+        try {
+            // Try to get from local database first
+            val localProviders = databaseHelper.getNearbyProviders()
+            if (localProviders.isNotEmpty()) {
+                return@withContext Resource.Success(localProviders)
             }
+
+            // If no local data, fetch from API
+            val apiProviders = apiClient.getNearbyProviders(location)
+            
+            // Save to local database
+            databaseHelper.insertProviders(apiProviders)
+            
+            Resource.Success(apiProviders)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to load providers")
         }
     }
-    
-    suspend fun getProviderById(providerId: String): Resource<Provider> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val provider = apiClient.getProviderById(providerId)
-                Resource.Success(provider)
-            } catch (e: Exception) {
-                try {
-                    val localProvider = databaseHelper.getProviderById(providerId)
-                    if (localProvider != null) {
-                        Resource.Success(localProvider)
-                    } else {
-                        Resource.Error("Provider not found", null)
-                    }
-                } catch (localException: Exception) {
-                    Resource.Error("Failed to load provider: ${e.message}", null)
-                }
+
+    suspend fun getProviderById(providerId: String): Resource<Provider> = withContext(Dispatchers.IO) {
+        try {
+            // Try local first
+            val localProvider = databaseHelper.getProviderById(providerId)
+            if (localProvider != null) {
+                return@withContext Resource.Success(localProvider)
             }
+
+            // Fetch from API
+            val apiProvider = apiClient.getProviderById(providerId)
+            Resource.Success(apiProvider)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Provider not found")
         }
     }
-    
-    suspend fun searchProviders(query: String, serviceType: String? = null): Resource<List<Provider>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val providers = apiClient.searchProviders(query, serviceType)
-                Resource.Success(providers)
-            } catch (e: Exception) {
-                val localProviders = databaseHelper.searchProviders(query, serviceType)
-                Resource.Success(localProviders)
+
+    suspend fun searchProviders(query: String, serviceType: String? = null): Resource<List<Provider>> = withContext(Dispatchers.IO) {
+        try {
+            // Search locally first
+            val localResults = databaseHelper.searchProviders(query, serviceType)
+            if (localResults.isNotEmpty()) {
+                return@withContext Resource.Success(localResults)
             }
+
+            // Search via API
+            val apiResults = apiClient.searchProviders(query, serviceType)
+            Resource.Success(apiResults)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Search failed")
         }
     }
 }

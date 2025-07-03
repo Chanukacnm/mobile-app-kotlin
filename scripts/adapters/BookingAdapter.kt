@@ -14,7 +14,7 @@ import com.example.servicebooking.models.BookingStatus
 class BookingAdapter(
     private val onBookingClick: (Booking) -> Unit
 ) : ListAdapter<Booking, BookingAdapter.BookingViewHolder>(BookingDiffCallback()) {
-    
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookingViewHolder {
         val binding = ItemBookingBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -23,15 +23,15 @@ class BookingAdapter(
         )
         return BookingViewHolder(binding)
     }
-    
+
     override fun onBindViewHolder(holder: BookingViewHolder, position: Int) {
         holder.bind(getItem(position))
     }
-    
+
     inner class BookingViewHolder(
         private val binding: ItemBookingBinding
     ) : RecyclerView.ViewHolder(binding.root) {
-        
+
         fun bind(booking: Booking) {
             binding.apply {
                 textServiceName.text = booking.service
@@ -39,50 +39,47 @@ class BookingAdapter(
                 textBookingTime.text = booking.time
                 textProviderInitial.text = booking.providerInitial
                 
-                // Set status badge
+                // Set status color and text
                 when (booking.status) {
-                    BookingStatus.CONFIRMED -> {
-                        chipStatus.text = "confirmed"
-                        chipStatus.setChipBackgroundColorResource(R.color.green_100)
-                        chipStatus.setTextColor(
-                            ContextCompat.getColor(root.context, R.color.green_700)
-                        )
-                    }
                     BookingStatus.PENDING -> {
-                        chipStatus.text = "pending"
-                        chipStatus.setChipBackgroundColorResource(R.color.yellow_100)
-                        chipStatus.setTextColor(
-                            ContextCompat.getColor(root.context, R.color.yellow_700)
-                        )
+                        chipStatus.text = "Pending"
+                        chipStatus.setChipBackgroundColorResource(R.color.orange_100)
+                        chipStatus.setTextColor(ContextCompat.getColor(itemView.context, R.color.orange_600))
+                    }
+                    BookingStatus.CONFIRMED -> {
+                        chipStatus.text = "Confirmed"
+                        chipStatus.setChipBackgroundColorResource(R.color.green_100)
+                        chipStatus.setTextColor(ContextCompat.getColor(itemView.context, R.color.green_600))
+                    }
+                    BookingStatus.IN_PROGRESS -> {
+                        chipStatus.text = "In Progress"
+                        chipStatus.setChipBackgroundColorResource(R.color.blue_100)
+                        chipStatus.setTextColor(ContextCompat.getColor(itemView.context, R.color.blue_600))
                     }
                     BookingStatus.COMPLETED -> {
-                        chipStatus.text = "completed"
-                        chipStatus.setChipBackgroundColorResource(R.color.blue_100)
-                        chipStatus.setTextColor(
-                            ContextCompat.getColor(root.context, R.color.blue_700)
-                        )
+                        chipStatus.text = "Completed"
+                        chipStatus.setChipBackgroundColorResource(R.color.green_100)
+                        chipStatus.setTextColor(ContextCompat.getColor(itemView.context, R.color.green_600))
                     }
                     BookingStatus.CANCELLED -> {
-                        chipStatus.text = "cancelled"
+                        chipStatus.text = "Cancelled"
                         chipStatus.setChipBackgroundColorResource(R.color.red_100)
-                        chipStatus.setTextColor(
-                            ContextCompat.getColor(root.context, R.color.red_700)
-                        )
+                        chipStatus.setTextColor(ContextCompat.getColor(itemView.context, R.color.red_600))
                     }
                 }
-                
+
                 root.setOnClickListener {
                     onBookingClick(booking)
                 }
             }
         }
     }
-    
+
     private class BookingDiffCallback : DiffUtil.ItemCallback<Booking>() {
         override fun areItemsTheSame(oldItem: Booking, newItem: Booking): Boolean {
             return oldItem.id == newItem.id
         }
-        
+
         override fun areContentsTheSame(oldItem: Booking, newItem: Booking): Boolean {
             return oldItem == newItem
         }

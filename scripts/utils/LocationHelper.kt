@@ -3,23 +3,25 @@ package com.example.servicebooking.utils
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.Address
-import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import androidx.core.app.ActivityCompat
-import java.util.*
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 
 class LocationHelper(private val context: Context) {
     
-    private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-    private val geocoder = Geocoder(context, Locale.getDefault())
+    private val fusedLocationClient: FusedLocationProviderClient = 
+        LocationServices.getFusedLocationProviderClient(context)
     
     fun getCurrentLocation(callback: (String) -> Unit) {
         if (ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+            ) != PackageManager.PERMISSION_GRANTED && 
+            ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
@@ -28,40 +30,38 @@ class LocationHelper(private val context: Context) {
             return
         }
         
-        try {
-            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-            
+        val cancellationTokenSource = CancellationTokenSource()
+        
+        fusedLocationClient.getCurrentLocation(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            cancellationTokenSource.token
+        ).addOnSuccessListener { location: Location? ->
             if (location != null) {
-                getAddressFromLocation(location) { address ->
-                    callback(address)
-                }
+                // Convert coordinates to address (you can use Geocoder here)
+                val locationString = "Lat: ${location.latitude}, Lng: ${location.longitude}"
+                callback(locationString)
             } else {
-                callback("Wellgama, Southern Province") // Default location
+                callback("Unable to get location")
             }
-        } catch (e: Exception) {
-            callback("Wellgama, Southern Province") // Default location
+        }.addOnFailureListener { exception ->
+            callback("Location error: ${exception.message}")
         }
     }
     
-    private fun getAddressFromLocation(location: Location, callback: (String) -> Unit) {
-        try {
-            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-            if (addresses?.isNotEmpty() == true) {
-                val address = addresses[0]
-                val locationString = "${address.locality ?: ""}, ${address.adminArea ?: ""}"
-                callback(locationString.trim().removePrefix(",").trim())
-            } else {
-                callback("Wellgama, Southern Province")
-            }
-        } catch (e: Exception) {
-            callback("Wellgama, Southern Province")
-        }
+    fun isLocationEnabled(): Boolean {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
     
-    fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
-        val results = FloatArray(1)
-        Location.distanceBetween(lat1, lon1, lat2, lon2, results)
-        return results[0] / 1000 // Convert to kilometers
+    fun hasLocationPermission(): Boolean {
+        return ActivityCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED ||
+        ActivityCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
     }
 }

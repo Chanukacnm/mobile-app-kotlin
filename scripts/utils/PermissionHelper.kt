@@ -13,48 +13,37 @@ class PermissionHelper(private val fragment: Fragment) {
     private val locationPermissionLauncher = fragment.registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        
-        locationPermissionCallback?.invoke(fineLocationGranted || coarseLocationGranted)
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                     permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        locationPermissionCallback?.invoke(granted)
     }
     
     fun requestLocationPermission(callback: (Boolean) -> Unit) {
         locationPermissionCallback = callback
         
-        val fineLocationPermission = ContextCompat.checkSelfPermission(
-            fragment.requireContext(),
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
-        val coarseLocationPermission = ContextCompat.checkSelfPermission(
-            fragment.requireContext(),
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-        
-        if (fineLocationPermission == PackageManager.PERMISSION_GRANTED ||
-            coarseLocationPermission == PackageManager.PERMISSION_GRANTED) {
-            callback(true)
-        } else {
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+        when {
+            hasLocationPermission() -> {
+                callback(true)
+            }
+            else -> {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
                 )
-            )
+            }
         }
     }
     
-    fun hasLocationPermission(): Boolean {
-        val fineLocationPermission = ContextCompat.checkSelfPermission(
+    private fun hasLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
             fragment.requireContext(),
             Manifest.permission.ACCESS_FINE_LOCATION
-        )
-        val coarseLocationPermission = ContextCompat.checkSelfPermission(
+        ) == PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(
             fragment.requireContext(),
             Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-        
-        return fineLocationPermission == PackageManager.PERMISSION_GRANTED ||
-                coarseLocationPermission == PackageManager.PERMISSION_GRANTED
+        ) == PackageManager.PERMISSION_GRANTED
     }
 }

@@ -1,98 +1,104 @@
 package com.example.servicebooking.models
 
-// Extended Service model
-data class Service(
-    val id: String = "",
-    val name: String,
-    val iconRes: Int,
-    val backgroundColorRes: Int,
-    val description: String = "",
-    val priceRange: String = ""
-)
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
-// Extended Booking model
-data class Booking(
-    val id: String = "",
-    val service: String,
-    val provider: String,
-    val time: String,
-    val status: BookingStatus,
-    val providerInitial: String,
-    val userId: String = "",
-    val createdAt: Long = System.currentTimeMillis()
-)
-
-// Extended Provider model
-data class Provider(
-    val id: String = "",
-    val name: String,
-    val service: String,
-    val rating: Float,
-    val reviewCount: Int,
-    val distance: String,
-    val isAvailable: Boolean,
-    val initial: String,
-    val profileImageUrl: String? = null,
-    val phone: String = "",
-    val email: String = ""
-)
-
-// Booking request model
-data class BookingRequest(
-    val serviceId: String,
-    val serviceName: String,
-    val providerId: String,
-    val providerName: String,
-    val scheduledTime: String,
-    val userId: String,
-    val notes: String = ""
-)
-
-// User model
-data class User(
-    val id: String,
-    val name: String,
-    val email: String,
-    val phone: String,
-    val location: String,
-    val profileImageUrl: String? = null,
-    val isBusinessOwner: Boolean = false
-)
-
-// Review model
+@Parcelize
 data class Review(
     val id: String,
-    val providerId: String,
     val userId: String,
     val userName: String,
+    val providerId: String,
+    val serviceId: String,
     val rating: Float,
     val comment: String,
-    val createdAt: Long
-)
+    val createdAt: Long = System.currentTimeMillis()
+) : Parcelable
 
-// Notification model
+@Parcelize
+data class ServiceCategory(
+    val id: String,
+    val name: String,
+    val iconRes: Int,
+    val services: List<Service> = emptyList()
+) : Parcelable
+
+@Parcelize
+data class Location(
+    val latitude: Double,
+    val longitude: Double,
+    val address: String,
+    val city: String,
+    val state: String,
+    val zipCode: String
+) : Parcelable
+
+@Parcelize
+data class BusinessProfile(
+    val id: String,
+    val businessName: String,
+    val ownerName: String,
+    val description: String,
+    val services: List<String>,
+    val location: Location,
+    val phone: String,
+    val email: String,
+    val website: String? = null,
+    val profileImageUrl: String? = null,
+    val coverImageUrl: String? = null,
+    val isVerified: Boolean = false,
+    val rating: Float = 0f,
+    val reviewCount: Int = 0,
+    val createdAt: Long = System.currentTimeMillis()
+) : Parcelable
+
+@Parcelize
 data class Notification(
     val id: String,
+    val userId: String,
     val title: String,
     val message: String,
     val type: NotificationType,
     val isRead: Boolean = false,
-    val createdAt: Long,
-    val actionData: String? = null
-)
+    val data: Map<String, String> = emptyMap(),
+    val createdAt: Long = System.currentTimeMillis()
+) : Parcelable
 
 enum class NotificationType {
     BOOKING_CONFIRMED,
     BOOKING_CANCELLED,
-    BOOKING_REMINDER,
-    PROVIDER_MESSAGE,
+    BOOKING_COMPLETED,
+    NEW_MESSAGE,
+    PAYMENT_RECEIVED,
+    REVIEW_RECEIVED,
     SYSTEM_UPDATE
 }
 
-enum class BookingStatus {
-    PENDING,
-    CONFIRMED,
-    IN_PROGRESS,
-    COMPLETED,
-    CANCELLED
+@Parcelize
+data class Message(
+    val id: String,
+    val conversationId: String,
+    val senderId: String,
+    val receiverId: String,
+    val content: String,
+    val messageType: MessageType = MessageType.TEXT,
+    val isRead: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis()
+) : Parcelable
+
+enum class MessageType {
+    TEXT,
+    IMAGE,
+    LOCATION,
+    BOOKING_REQUEST,
+    SYSTEM
 }
+
+@Parcelize
+data class Conversation(
+    val id: String,
+    val participants: List<String>,
+    val lastMessage: Message? = null,
+    val unreadCount: Int = 0,
+    val updatedAt: Long = System.currentTimeMillis()
+) : Parcelable

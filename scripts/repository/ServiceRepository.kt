@@ -11,66 +11,56 @@ class ServiceRepository(
     private val apiClient: ApiClient,
     private val databaseHelper: DatabaseHelper
 ) {
-    
-    suspend fun getPopularServices(): Resource<List<Service>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                // Try to get from API first
-                val apiServices = apiClient.getPopularServices()
-                
-                // Cache in local database
-                databaseHelper.insertServices(apiServices)
-                
-                Resource.Success(apiServices)
-            } catch (e: Exception) {
-                // Fallback to local database
-                try {
-                    val localServices = databaseHelper.getPopularServices()
-                    if (localServices.isNotEmpty()) {
-                        Resource.Success(localServices)
-                    } else {
-                        Resource.Error("No services available", null)
-                    }
-                } catch (localException: Exception) {
-                    Resource.Error("Failed to load services: ${e.message}", null)
-                }
+
+    suspend fun getPopularServices(): Resource<List<Service>> = withContext(Dispatchers.IO) {
+        try {
+            // Try to get from local database first
+            val localServices = databaseHelper.getPopularServices()
+            if (localServices.isNotEmpty()) {
+                return@withContext Resource.Success(localServices)
             }
+
+            // If no local data, fetch from API
+            val apiServices = apiClient.getPopularServices()
+            
+            // Save to local database
+            databaseHelper.insertServices(apiServices)
+            
+            Resource.Success(apiServices)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Unknown error occurred")
         }
     }
-    
-    suspend fun getServiceById(serviceId: String): Resource<Service> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val service = apiClient.getServiceById(serviceId)
-                Resource.Success(service)
-            } catch (e: Exception) {
-                try {
-                    val localService = databaseHelper.getServiceById(serviceId)
-                    if (localService != null) {
-                        Resource.Success(localService)
-                    } else {
-                        Resource.Error("Service not found", null)
-                    }
-                } catch (localException: Exception) {
-                    Resource.Error("Failed to load service: ${e.message}", null)
-                }
+
+    suspend fun getServiceById(serviceId: String): Resource<Service> = withContext(Dispatchers.IO) {
+        try {
+            // Try local first
+            val localService = databaseHelper.getServiceById(serviceId)
+            if (localService != null) {
+                return@withContext Resource.Success(localService)
             }
+
+            // Fetch from API
+            val apiService = apiClient.getServiceById(serviceId)
+            Resource.Success(apiService)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Service not found")
         }
     }
-    
-    suspend fun searchServices(query: String): Resource<List<Service>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val services = apiClient.searchServices(query)
-                Resource.Success(services)
-            } catch (e: Exception) {
-                val localServices = databaseHelper.searchServices(query)
-                if (localServices.isNotEmpty()) {
-                    Resource.Success(localServices)
-                } else {
-                    Resource.Error("No services found for '$query'", null)
-                }
+
+    suspend fun searchServices(query: String): Resource<List<Service>> = withContext(Dispatchers.IO) {
+        try {
+            // Search locally first
+            val localResults = databaseHelper.searchServices(query)
+            if (localResults.isNotEmpty()) {
+                return@withContext Resource.Success(localResults)
             }
+
+            // Search via API
+            val apiResults = apiClient.searchServices(query)
+            Resource.Success(apiResults)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Search failed")
         }
     }
 }

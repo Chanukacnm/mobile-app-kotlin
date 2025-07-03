@@ -12,59 +12,65 @@ class BookingRepository(
     private val apiClient: ApiClient,
     private val databaseHelper: DatabaseHelper
 ) {
-    
-    suspend fun getUserBookings(): Resource<List<Booking>> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val bookings = apiClient.getUserBookings()
-                databaseHelper.insertBookings(bookings)
-                Resource.Success(bookings)
-            } catch (e: Exception) {
-                try {
-                    val localBookings = databaseHelper.getUserBookings()
-                    Resource.Success(localBookings)
-                } catch (localException: Exception) {
-                    Resource.Error("Failed to load bookings: ${e.message}", emptyList())
-                }
+
+    suspend fun getUserBookings(): Resource<List<Booking>> = withContext(Dispatchers.IO) {
+        try {
+            // Try to get from local database first
+            val localBookings = databaseHelper.getUserBookings()
+            if (localBookings.isNotEmpty()) {
+                return@withContext Resource.Success(localBookings)
             }
+
+            // If no local data, fetch from API
+            val apiBookings = apiClient.getUserBookings()
+            
+            // Save to local database
+            databaseHelper.insertBookings(apiBookings)
+            
+            Resource.Success(apiBookings)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to load bookings")
         }
     }
-    
-    suspend fun createBooking(bookingRequest: BookingRequest): Resource<Booking> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val booking = apiClient.createBooking(bookingRequest)
-                databaseHelper.insertBooking(booking)
-                Resource.Success(booking)
-            } catch (e: Exception) {
-                Resource.Error("Failed to create booking: ${e.message}", null)
-            }
+
+    suspend fun createBooking(request: BookingRequest): Resource<Booking> = withContext(Dispatchers.IO) {
+        try {
+            val newBooking = apiClient.createBooking(request)
+            
+            // Save to local database
+            databaseHelper.insertBooking(newBooking)
+            
+            Resource.Success(newBooking)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to create booking")
         }
     }
-    
-    suspend fun updateBookingStatus(bookingId: String, status: String): Resource<Booking> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val booking = apiClient.updateBookingStatus(bookingId, status)
-                databaseHelper.updateBooking(booking)
-                Resource.Success(booking)
-            } catch (e: Exception) {
-                Resource.Error("Failed to update booking: ${e.message}", null)
-            }
+
+    suspend fun updateBookingStatus(bookingId: String, status: String): Resource<Booking> = withContext(Dispatchers.IO) {
+        try {
+            val updatedBooking = apiClient.updateBookingStatus(bookingId, status)
+            
+            // Update local database
+            databaseHelper.updateBooking(updatedBooking)
+            
+            Resource.Success(updatedBooking)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to update booking")
         }
     }
-    
-    suspend fun cancelBooking(bookingId: String): Resource<Boolean> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val success = apiClient.cancelBooking(bookingId)
-                if (success) {
-                    databaseHelper.deleteBooking(bookingId)
-                }
-                Resource.Success(success)
-            } catch (e: Exception) {
-                Resource.Error("Failed to cancel booking: ${e.message}", false)
+
+    suspend fun cancelBooking(bookingId: String): Resource<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val success = apiClient.cancelBooking(bookingId)
+            
+            if (success) {
+                // Remove from local database
+                databaseHelper.deleteBooking(bookingId)
             }
+            
+            Resource.Success(success)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to cancel booking")
         }
     }
 }

@@ -132,18 +132,19 @@ class MainActivity : AppCompatActivity() {
     private fun loadData() {
         // Load popular services
         val services = listOf(
-            Service("Plumbing", R.drawable.ic_plumbing, R.color.blue_100),
-            Service("Electrical", R.drawable.ic_electrical, R.color.orange_100),
-            Service("Cleaning", R.drawable.ic_cleaning, R.color.green_100),
-            Service("Auto Repair", R.drawable.ic_auto_repair, R.color.red_100),
-            Service("Tutoring", R.drawable.ic_tutoring, R.color.purple_100),
-            Service("Beauty", R.drawable.ic_beauty, R.color.pink_100)
+            Service("1", "Plumbing", R.drawable.ic_plumbing, R.color.blue_100),
+            Service("2", "Electrical", R.drawable.ic_electrical, R.color.orange_100),
+            Service("3", "Cleaning", R.drawable.ic_cleaning, R.color.green_100),
+            Service("4", "Auto Repair", R.drawable.ic_auto_repair, R.color.red_100),
+            Service("5", "Tutoring", R.drawable.ic_tutoring, R.color.purple_100),
+            Service("6", "Beauty", R.drawable.ic_beauty, R.color.pink_100)
         )
         servicesAdapter.submitList(services)
         
         // Load bookings
         val bookings = listOf(
             Booking(
+                id = "1",
                 service = "Plumbing repair",
                 provider = "Mike's Plumbing",
                 time = "Today, 2:00 PM",
@@ -151,6 +152,7 @@ class MainActivity : AppCompatActivity() {
                 providerInitial = "M"
             ),
             Booking(
+                id = "2",
                 service = "Math Tutoring",
                 provider = "Lisa Chen",
                 time = "Tomorrow, 4:00 PM",
@@ -163,6 +165,7 @@ class MainActivity : AppCompatActivity() {
         // Load providers
         val providers = listOf(
             Provider(
+                id = "1",
                 name = "Mike's Plumbing",
                 service = "Plumbing",
                 rating = 4.8f,
@@ -172,6 +175,7 @@ class MainActivity : AppCompatActivity() {
                 initial = "M"
             ),
             Provider(
+                id = "2",
                 name = "Sarah Electronics",
                 service = "Electrical Work",
                 rating = 4.4f,
@@ -197,7 +201,11 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun setupNavigation() {
-        val navController = findNavController(R.id.nav_host_fragment)
-        binding.bottomNavigation.setupWithNavController(navController)
+        try {
+            val navController = findNavController(R.id.nav_host_fragment)
+            binding.bottomNavigation.setupWithNavController(navController)
+        } catch (e: Exception) {
+            // Handle navigation setup error
+        }
     }
 }
